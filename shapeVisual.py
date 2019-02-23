@@ -7,9 +7,28 @@ from math import sin, cos
 import imageToPaint
 import time
 
+import numpy as np
+from PIL import Image
+
 #put mouse in ms paint to make
 screenWidth, screenHeight = pyg.size()
 pyg.PAUSE = 0.005
+
+def Template(n, size=40):
+    xi, yi = pyg.position()
+    i=0
+    while True:
+        if(keyboard.is_pressed("esc")):
+            break
+
+        x="xxx"
+        x*=size
+        y="xxx"
+        y*=size
+        pyg.moveTo(xi+x, yi+y, moveDuration)
+        inverseClick()
+        i+=1
+    pyg.mouseUp()
 
 def inverseClick(doReg=False):
     if doReg:
@@ -17,6 +36,14 @@ def inverseClick(doReg=False):
     else:
         pyg.mouseUp()
         pyg.mouseDown()
+
+def constrain(value, min, max):
+    assert min < max
+    if value > max:
+        value = value % max
+        while value < min:
+            value += 1
+    return value
 
 def makeRectangle(height, width):
     pyg.dragRel(width, 0, duration=moveDuration)   # move right
@@ -485,21 +512,35 @@ def maurer(n, d, size=80):
     pyg.mouseUp()
     print("used {} and {}".format(n,d))
 
+colourDict = {0:(0,0,0)}
 def juliaPixel(c, x, y):
-    i=0
+    detail = 1#just makes it go faster, must evenly divide 1000
+    i=100
     while i<1000 and x**2 + y**2 < 4:
         if(keyboard.is_pressed("esc")):
             break
         xtemp = x**2 - y**2
         y = 2*x*y  + c
         x = xtemp + c
-        i+=50#just makes it go faster, must evenly divide 1000
+        i+=detail
+    i = rangeScale(i, 0, 255, 0, 1000)
+
+    if i not in colourDict.keys():
+        colourDict[i] = (randint(0,255), randint(0,255), randint(0,255))
+    
+    return colourDict[i]
+
+
     #print("i is ", i)
-    return i==1000
+    #return i==1000
 
 def julia(c, width=100, height=50):
     xi, yi = pyg.position()
-    detail = 2
+    arr = np.zeros((width, height, 3))
+    print(arr)
+    print("shape is ", arr.shape)
+    detail = 1 #smallest is one, only do integers
+    lastPix = (0,0,0)
     for x in range(0, width, detail):
         if(keyboard.is_pressed("esc")):
             break
@@ -508,13 +549,17 @@ def julia(c, width=100, height=50):
             if(keyboard.is_pressed("esc")):
                 break
             currY = rangeScale(y, -1, 1, 0, height)
-            if(juliaPixel(c, currX, currY)):
-                pyg.moveTo(xi+x, yi+y)
-                inverseClick(True)
+            pix = juliaPixel(c, currX, currY)
+            if pix != lastPix and pix[0] != 0:
+                imageToPaint.changeToColour(pix[0], pix[1], pix[2])
+                lastPix = pix
+            pyg.moveTo(xi+x, yi+y)
+            inverseClick(True)
     pyg.mouseUp()
     pyg.moveTo(5,100)
     print(c)
     print("ended at x is {}, y is {}".format(x,y))
+    print("there were {} colours".format(len(colourDict)))
 
 
 
@@ -532,49 +577,29 @@ def horlageMaurer(n, d, size=40):
         y*=size
         pyg.moveTo(xi+x, yi+y)
         inverseClick()
-        i+=1
+        i+=circleDetail
     pyg.mouseUp()
     print("n = {}, d = {}, ended on {}".format(n,d, theta))
 
-def lab5(n, size=40):
+def heart(n, size=40):
     xi, yi = pyg.position()
     i=0
     while True:
         if(keyboard.is_pressed("esc")):
             break
 
-        x=sin(i)
-        x*=size
-        y=math.tan(i)
-        if y > 100:
-            y=0
-        if y < -100:
-            y=0
-        y = rangeScale(y, 0, size, -100, 100)
-        #y*=size
-        pyg.moveTo(xi+x, yi+y)
-        inverseClick()
-        i+=1
-    pyg.mouseUp()
-
-def Template(n, size=40):
-    xi, yi = pyg.position()
-    i=0
-    while True:
-        if(keyboard.is_pressed("esc")):
-            break
-
-        x="xxx"
-        x*=size
-        y="xxx"
+        x=16*(sin(sin(sin(i/n))))
+        x*=size*2
+        y=13*cos(i*n)-5*cos(2*i/n)-2*cos(3*i*n)-cos(i*4/n)
         y*=size
-        pyg.moveTo(xi+x, yi+y)
+        pyg.moveTo(xi+x, yi+y, moveDuration)
         inverseClick()
         i+=1
     pyg.mouseUp()
+
 
 moveDuration = 0.01
-circleDetail = 0.01 #smaller is more detail
+circleDetail = 0.09 #smaller is more detail
 
 def main():
     print("ready, press ctrl+0 to continue")
@@ -617,14 +642,16 @@ def main():
     #makeFlower(random.random(), 200)
     #funFlower(.272727, 4)#XXX
     #maurer(7, 139)#start high, is cool, likes primes
-    #maurer(randint(4, 20), 139)
+    #maurer(randint(4, 20), randint(20, 200))
     #maurer(6, 71)
-    #julia(.279, 300, 100)
-    #julia(round(random.random(), 4), 350, 150)
-    horlageMaurer(2,39, 200)
+    #julia(.279, 200, 200)
+    #julia(round(random.random(), 4), 200, 150)
+    #horlageMaurer(2,39, 200)
     #horlageMaurer(402,284,220)
     #horlageMaurer(randint(1,1000), randint(1,1000),200)
     #horlageMaurer(5,105, 200)
+    #heart(20,10)
+    julia(.3842, 350, 300)#try this sometime
 
 if __name__ == "__main__":
     main()

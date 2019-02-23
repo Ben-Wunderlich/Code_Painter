@@ -34,15 +34,16 @@ def storeChange(red, green, blue):
     timeSaved.add()
 
 def changeToColour(red, green, blue):
-    if colourStore.contains((red,green,blue)):
+    '''if colourStore.contains((red,green,blue)):
         storeChange(red, green, blue)
-        return
+        return'''
 
     LOCATIONS = [(880, 455, str(red)),
      (880, 477, str(green)),(880,500, str(blue))]
     otherDuration = 0.15
     pyg.moveTo(990, 70, duration=moveDuration)#edit colour
     pyg.click()
+    time.sleep(0.1)
     for item in LOCATIONS:
         if(keyboard.is_pressed("esc")):
             break
@@ -53,11 +54,13 @@ def changeToColour(red, green, blue):
             pyg.press("tab")
         pyg.typewrite(item[2])
     pyg.press("enter")
-    time.sleep(0.1)
-    colourStore.add((red, green, blue))
+    time.sleep(0.25)
+    #colourStore.add((red, green, blue))
 
 def colourPaint(xStart, yStart, arr):
     for i, line in enumerate(arr):
+        if(keyboard.is_pressed("esc")):
+            break
         for j, pixel in enumerate(line):
             if(keyboard.is_pressed("esc")):
                 break
