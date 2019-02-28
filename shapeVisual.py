@@ -7,8 +7,6 @@ from math import sin, cos
 import imageToPaint
 import time
 
-import numpy as np
-from PIL import Image
 
 #put mouse in ms paint to make
 screenWidth, screenHeight = pyg.size()
@@ -512,56 +510,6 @@ def maurer(n, d, size=80):
     pyg.mouseUp()
     print("used {} and {}".format(n,d))
 
-colourDict = {0:(0,0,0)}
-def juliaPixel(c, x, y):
-    detail = 1#just makes it go faster, must evenly divide 1000
-    i=100
-    while i<1000 and x**2 + y**2 < 4:
-        if(keyboard.is_pressed("esc")):
-            break
-        xtemp = x**2 - y**2
-        y = 2*x*y  + c
-        x = xtemp + c
-        i+=detail
-    i = rangeScale(i, 0, 255, 0, 1000)
-
-    if i not in colourDict.keys():
-        colourDict[i] = (randint(0,255), randint(0,255), randint(0,255))
-    
-    return colourDict[i]
-
-
-    #print("i is ", i)
-    #return i==1000
-
-def julia(c, width=100, height=50):
-    xi, yi = pyg.position()
-    arr = np.zeros((width, height, 3))
-    print(arr)
-    print("shape is ", arr.shape)
-    detail = 1 #smallest is one, only do integers
-    lastPix = (0,0,0)
-    for x in range(0, width, detail):
-        if(keyboard.is_pressed("esc")):
-            break
-        currX = rangeScale(x, -2.5, 1, 0, width)
-        for y in range(0, height, detail):
-            if(keyboard.is_pressed("esc")):
-                break
-            currY = rangeScale(y, -1, 1, 0, height)
-            pix = juliaPixel(c, currX, currY)
-            if pix != lastPix and pix[0] != 0:
-                imageToPaint.changeToColour(pix[0], pix[1], pix[2])
-                lastPix = pix
-            pyg.moveTo(xi+x, yi+y)
-            inverseClick(True)
-    pyg.mouseUp()
-    pyg.moveTo(5,100)
-    print(c)
-    print("ended at x is {}, y is {}".format(x,y))
-    print("there were {} colours".format(len(colourDict)))
-
-
 
 def horlageMaurer(n, d, size=40):
     xi, yi = pyg.position()
@@ -644,14 +592,11 @@ def main():
     #maurer(7, 139)#start high, is cool, likes primes
     #maurer(randint(4, 20), randint(20, 200))
     #maurer(6, 71)
-    #julia(.279, 200, 200)
-    #julia(round(random.random(), 4), 200, 150)
     #horlageMaurer(2,39, 200)
     #horlageMaurer(402,284,220)
     #horlageMaurer(randint(1,1000), randint(1,1000),200)
     #horlageMaurer(5,105, 200)
     #heart(20,10)
-    julia(.3842, 350, 300)#try this sometime
 
 if __name__ == "__main__":
     main()
