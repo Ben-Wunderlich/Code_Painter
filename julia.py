@@ -1,61 +1,62 @@
-import datetime
+from datetime import datetime
 import numpy as np
 import imageio
 import keyboard
 from random import randint, random
 from PIL import Image
 import pyautogui as pyg
-import mqueue
 from win10toast import ToastNotifier    
-import sys#add command line args if argv > 1
+#import sys#add command line args if argv > 1
 
 toaster = ToastNotifier()
-colourDict = {}
-savedQueue = mqueue.wQueue()
-tempColours = []
 dictPath = "storage\\my.secretdata"
-USE_STORED = True
 
+def timeDiff(startTime, endTime):
+    deltaT = endTime-startTime
+    secDiff=deltaT.seconds
+    if secDiff==0:
+        msTime=deltaT.microseconds//1000
+        ratio = str(int(msTime/1000 *100))+"% of a second"
+        
+        return "it took {}ms, thats {}".format(msTime,ratio)
+
+    hDiff=0
+    minDiff=0
+    while secDiff >= 3600:
+        secDiff-=3600
+        hDiff+=1
+    while secDiff >= 60:
+        secDiff-=60
+        minDiff+=1
+
+    return "{}h, {}m, {}s".format(hDiff,minDiff,secDiff)
 
 
 def currTime():
-    a = datetime.datetime.now().time()
-    a = str(a).split(".")[0].split(":")
+    a = datetime.now()
+    arr = []
+    arr.extend((a.hour,a.minute,a.second))
     isPm="am"
-    if int(a[0]) > 12:
+    if arr[0] > 12:
         isPm="pm"
-        a[0] = str(int(a[0])-12)
-    return ":".join(a)+isPm
+        arr[0] -= 12
+    arr = [str(el) for el in arr]
+    for i in range(1,3):#1,2
+        while len(arr[i]) < 2:
+            arr[i]="0"+arr[i]
+    return ":".join(arr)+isPm
 
 
 def rangeScale(val, Tmin, Tmax, Rmin, Rmax):
     res = (val-Rmin)/(Rmax-Rmin)
-    res = (res*(Tmax-Tmin)) + Tmin
+    res = res*(Tmax-Tmin) + Tmin
     return res
-
-def dictToMemory(myDict=colourDict):#make names for each one and can choose
-    allItems = []
-    for val in tempColours:
-        bStr = ",".join([str(a) for a in val])
-        allItems.append(bStr)
-    with open(dictPath, "w+") as outFile:
-        outFile.write("\n".join(allItems))
-    print("{} colours saved".format(len(colourDict)))
-    #XXX make thing to update it 
-
-def dictFromMemory():#remove arg, just for testing
-    #global colourDict
-    with open(dictPath, "r") as inFile:
-        for col in inFile:
-            rgb = [int(el) for el in col.split(",")]
-            savedQueue.add(rgb)
-
 
 
 def juliaPixel(c, x, y):
-    #max=100#this is fine
+    #max=3000#for very small ones
     #max=10#too small, just inside
-    max=50
+    max=80
     detail = 1#smaller makes it go faster, smaller is more detail
     i=0
     while i<max and x**2 + y**2 < 4:
@@ -65,16 +66,13 @@ def juliaPixel(c, x, y):
         y = 2*x*y  + c
         x = xtemp + c
         i+=detail
-    i = rangeScale(i, 0, 255, 0, max)
+    i = int(round(rangeScale(i, 0, 255, 0, max)))
+    '''if i==255:
+        return(0,255,256)'''
+    #return(i,i,i)#white on black
+    return(0,i//1.5,i)#light blue on black
+    #return(0,i,255-i)# on blue
 
-    if i not in colourDict.keys():
-        if savedQueue.isEmpty():
-            colourDict[i] = (randint(0,255), randint(0,255), randint(0,255))
-        else:
-            colourDict[i] = savedQueue.remove()
-        tempColours.append(colourDict[i])
-    
-    return colourDict[i]
 
 def julia(c, width=100, height=50):
     arr = np.zeros((height, width, 3))
@@ -82,39 +80,38 @@ def julia(c, width=100, height=50):
     fileName = "interestingResults\\{}julia{}.png".format(randint(1,99),c)
     print("STARTING\nwidth={}\nheight={}\nc={}".format(width, height, c))
     print("operation started at", currTime())
+    strtStore = datetime.now()
     print("\ncomputing {}...".format(fileName[19:-4]))
 
     for x in range(0, width):
-        viewPort = (1.1, 1.4)#close
-        #viewPort = (2.2, 2.2)#wide
+        viewPort = (1.5, 1.3)#wide
         #viewPort = (0.5, 0.5)#super close
         #viewPort = (0.01, 0.01)#are you crazy?!
         #viewPort=(10,10)#super wide
-        currX = rangeScale(x, -viewPort[0], viewPort[1], 0, width)
+        currX = rangeScale(x, -viewPort[0], viewPort[0], 0, width)
         for y in range(0, height):
             currY = rangeScale(y, -viewPort[1], viewPort[1], 0, height)
             arr[y,x]=juliaPixel(c, currX, currY)
         if keyboard.is_pressed("alt+ctrl+caps lock"):
             break
-    imageio.imwrite(fileName, arr)
-    print("there were {} colours".format(len(colourDict)))
-    print("operation ended at", currTime())
+
+    arr = arr / arr.max() #normalizes data in range 0 - 255
+    arr = 255 * arr
+    img = arr.astype(np.uint8)
+    imageio.imwrite(fileName, img)
+
+    print("\n...finished!\noperation ended at", currTime())
+    print("it took {}".format(timeDiff(strtStore,datetime.now())))
     toaster.show_toast("program is done","julia {}".format(c))
 
-def colourChoice():
-    inp = input("do you like the colour scheme?(y/n)")
-    if inp == "y":
-        dictToMemory(colourDict)
-    else:
-        print("that's too bad")
-
 def main():
-    load = bool(input("enter to start or 1 to load saved colours\n"))
-    if load:
-        dictFromMemory()
+    #input("hit enter to start\n")
     #julia(round(random(), 3), 200, 150)
-    #julia(0.626, 500, 500)#try with different detail levels
-    julia(0.38, 300, 300)
+    julia(-0.55, 1000, 800)
+    #julia(3,5,10)
+    #julia(0.355,100,100)
+    #julia(0.38,200,200)
+    #julia(0.36, 1000, 1000)
     #julia(0.785, 700,500)
     #julia(0.489, 800, 500)
     #1.25 aspect ratio is good
@@ -125,10 +122,6 @@ def main():
     #julia(0.35, 1000, 800)#super cool
 
     #try negative numbers
-    #if not load and queue :
-    #colourChoice()
 
 if __name__ == "__main__":
     main()
-
-
