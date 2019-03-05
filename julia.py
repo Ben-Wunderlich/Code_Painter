@@ -1,12 +1,11 @@
 from datetime import datetime
 import numpy as np
-import imageio
+from imageio import imwrite
 import keyboard
 from random import randint, random
 from PIL import Image
-import pyautogui as pyg
 from win10toast import ToastNotifier    
-#import sys#add command line args if argv > 1
+import sys#add command line args if argv > 1
 
 toaster = ToastNotifier()
 dictPath = "storage\\my.secretdata"
@@ -46,80 +45,91 @@ def currTime():
             arr[i]="0"+arr[i]
     return ":".join(arr)+isPm
 
+def isFloat(number):
+    try:
+        float(number)
+        return True
+    except ValueError:
+        return False
+
+def loadFromArgs():
+    args=[float(num) for num in sys.argv if isFloat(num)]
+    args = [int(num) if int(num)==num else num for num in args ]
+    julia(*args)#the *args expands the list
+        
+
 
 def rangeScale(val, Tmin, Tmax, Rmin, Rmax):
     res = (val-Rmin)/(Rmax-Rmin)
-    res = res*(Tmax-Tmin) + Tmin
-    return res
+    return res*(Tmax-Tmin) + Tmin
 
-
-def juliaPixel(c, x, y):
-    #max=3000#for very small ones
-    #max=10#too small, just inside
-    max=80
-    detail = 1#smaller makes it go faster, smaller is more detail
+def juliaPixel(c, x, y,max):
+    #max=15#minimalist
     i=0
     while i<max and x**2 + y**2 < 4:
-        if(keyboard.is_pressed("esc")):
-            break
         xtemp = x**2 - y**2
         y = 2*x*y  + c
         x = xtemp + c
-        i+=detail
+        i+=1
     i = int(round(rangeScale(i, 0, 255, 0, max)))
-    '''if i==255:
-        return(0,255,256)'''
+
     #return(i,i,i)#white on black
     return(0,i//1.5,i)#light blue on black
     #return(0,i,255-i)# on blue
 
 
-def julia(c, width=100, height=50):
+def julia(c, width=100, height=50, max=15,xView=1.5, yView=1.3):
     arr = np.zeros((height, width, 3))
-    #take off end bits of it so ends at minutes
     fileName = "interestingResults\\{}julia{}.png".format(randint(1,99),c)
-    print("STARTING\nwidth={}\nheight={}\nc={}".format(width, height, c))
+    print("""STARTING\nfileSize={}x{}, c={}
+max={}, view={}x{}""".format(width, height, c, max,xView,yView))
     print("operation started at", currTime())
     strtStore = datetime.now()
     print("\ncomputing {}...".format(fileName[19:-4]))
 
     for x in range(0, width):
-        viewPort = (1.5, 1.3)#wide
-        #viewPort = (0.5, 0.5)#super close
-        #viewPort = (0.01, 0.01)#are you crazy?!
-        #viewPort=(10,10)#super wide
-        currX = rangeScale(x, -viewPort[0], viewPort[0], 0, width)
+ 
+        currX = rangeScale(x, -xView, xView, 0, width)
         for y in range(0, height):
-            currY = rangeScale(y, -viewPort[1], viewPort[1], 0, height)
-            arr[y,x]=juliaPixel(c, currX, currY)
+            currY = rangeScale(y, -yView, yView, 0, height)
+            arr[y,x]=juliaPixel(c, currX, currY, max)
         if keyboard.is_pressed("alt+ctrl+caps lock"):
             break
 
-    arr = arr / arr.max() #normalizes data in range 0 - 255
+    arr = arr / arr.max() #normalizing data in range 0 - 255
     arr = 255 * arr
     img = arr.astype(np.uint8)
-    imageio.imwrite(fileName, img)
+    imwrite(fileName, img)
 
     print("\n...finished!\noperation ended at", currTime())
     print("it took {}".format(timeDiff(strtStore,datetime.now())))
     toaster.show_toast("program is done","julia {}".format(c))
 
 def main():
-    #input("hit enter to start\n")
-    #julia(round(random(), 3), 200, 150)
-    julia(-0.55, 1000, 800)
+    if len(sys.argv) > 1:
+        loadFromArgs()
+        return
+    c=-0.6
+    width=100
+    height=100
+    xView=1.5
+    yView=1.3
+    max=15
+
+    #julia(-0.55,1920,1080)
+    #julia(0.349, 50,50)
     #julia(3,5,10)
     #julia(0.355,100,100)
     #julia(0.38,200,200)
     #julia(0.36, 1000, 1000)
     #julia(0.785, 700,500)
     #julia(0.489, 800, 500)
-    #1.25 aspect ratio is good
 
     #things to try when have time
     #julia(0.3842, 2000, 1500)#do overnight
     #julia(0.4, 1400, 800)#also overnight, do first
     #julia(0.35, 1000, 800)#super cool
+    julia(c,width,height,max,xView,yView)
 
     #try negative numbers
 

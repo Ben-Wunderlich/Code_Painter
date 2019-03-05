@@ -35,8 +35,6 @@ def juliaPixel(c, x, y):
     detail = 1#smaller makes it go faster, smaller is more detail
     i=0
     while i<max and x**2 + y**2 < 4:
-        if(keyboard.is_pressed("esc")):
-            break
         xtemp = x**2 - y**2
         y = 2*x*y  + c
         x = xtemp + c
